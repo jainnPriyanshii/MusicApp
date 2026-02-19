@@ -23,69 +23,225 @@ const SectionHeader = ({ title }) => (
   </View>
 );
 
-const SuggestedRoute = ({ navigation }) => (
-  <ScrollView style={styles.tabContainer}>
-    {/* Recently Played Section */}
-    <SectionHeader title="Recently Played" />
-    <FlatList
-      horizontal
-      data={[1, 2, 3]}
-      renderItem={({ item }) => (
-        <SongCard
-          song={{
-            title: "Shades of Love",
-            artist: "Ania Szarmach",
-            image: "https://picsum.photos/150",
-          }}
-          onPress={() => navigation.navigate("Player")}
-        />
-      )}
-      keyExtractor={(item) => item.toString()}
-      showsHorizontalScrollIndicator={false}
-    />
+import { getTrendingSongs, getTrendingArtists } from "../services/api";
 
-    <SectionHeader title="Artists" />
-    <FlatList
-      horizontal
-      data={[1, 2, 3]}
-      renderItem={({ item }) => (
-        <ArtistCard
-          artist={{
-            name: "Ariana Grande",
-            image: "https://picsum.photos/151",
-          }}
-          onPress={() => navigation.navigate("ArtistDetails", {
-            artist: {
-              name: "Ariana Grande",
-              image: "https://picsum.photos/151",
-            }
-          })}
-        />
-      )}
-      keyExtractor={(item) => item.toString()}
-      showsHorizontalScrollIndicator={false}
-    />
+const SuggestedRoute = ({ navigation }) => {
+  const [trendingSongs, setTrendingSongs] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    <SectionHeader title="Most Played" />
-    <FlatList
-      horizontal
-      data={[1, 2, 3]}
-      renderItem={({ item }) => (
-        <SongCard
-          song={{
-            title: "Song " + item,
-            artist: "Artist " + item,
-            image: "https://picsum.photos/152",
-          }}
-          onPress={() => navigation.navigate("Player")}
-        />
-      )}
-      keyExtractor={(item) => item.toString()}
-      showsHorizontalScrollIndicator={false}
-    />
-    <View style={{ height: 100 }} />
-  </ScrollView>
-);
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [songsData, artistsData] = await Promise.all([
+          getTrendingSongs("hindi"),
+          getTrendingArtists()
+        ]);
+        // Handle potentially different data structures (array vs object with results)
+        const songs = songsData?.results || songsData || [];
+        const artists = artistsData?.results || artistsData || [];
+
+        setTrendingSongs(Array.isArray(songs) ? songs : []);
+        setArtists(Array.isArray(artists) ? artists : []);
+      } catch (error) {
+        console.error("Error fetching home data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const getImage = (images) => {
+    if (!images) return "https://picsum.photos/150";
+    if (typeof images === 'string') return images;
+    if (Array.isArray(images)) {
+      // Return the highest quality or the last one
+      return images[images.length - 1]?.link || images[0]?.link;
+    }
+    return "https://picsum.photos/150";
+  };
+
+  const decodeHtmlEntities = (text) => {
+    if (!text) return "";
+    return text.replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#039;/g, "'");
+  };
+
+  return (
+    <ScrollView style={styles.tabContainer}>
+      {/* Recently Played Section (Trending for now) */}
+      <SectionHeader title="Trending Songs" />
+      <FlatList
+        horizontal
+        data={trendingSongs}
+        renderItem={({ item }) => (
+          <SongCard
+            song={{
+              title: decodeHtmlEntities(item.name),
+              artist: decodeHtmlEntities(item.primaryArtists || item.artist),
+              image: getImage(item.image),
+            }}
+            onPress={() => navigation.navigate("Player", {
+              song: {
+                title: decodeHtmlEntities(item.name),
+                artist: decodeHtmlEntities(item.primaryArtists || item.artist),
+                image: getImage(item.image),
+              }
+            })}
+          />
+        )}
+        keyExtractor={(item) => item.id}
+        showsHorizontalScrollIndicator={false}
+      />
+
+      <SectionHeader title="Top Artists" />
+      <FlatList
+        horizontal
+        data={artists}
+        renderItem={({ item }) => (
+          <ArtistCard
+            artist={{
+              name: decodeHtmlEntities(item.name),
+              image: getImage(item.image),
+            }}
+            onPress={() => navigation.navigate("ArtistDetails", {
+              artist: {
+                name: decodeHtmlEntities(item.name),
+                image: getImage(item.image),
+              }
+            })}
+          />
+        )}
+        keyExtractor={(item) => item.id}
+        showsHorizontalScrollIndicator={false}
+      />
+
+      <View style={{ height: 100 }} />
+    </ScrollView>
+  );
+};
+
+const SongsRoute = ({ navigation }) => {
+  const [songs, setSongs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchSongs = async () => {
+      try {
+        const data = await getTrendingSongs("english"); // Fetching English songs for variety or keep same
+        const results = data?.results || data || [];
+        setSongs(Array.isArray(results) ? results : []);
+      } catch (error) {
+        console.error("Error fetching songs tab:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSongs();
+  }, []);
+
+  const decodeHtmlEntities = (text) => {
+    if (!text) return "";
+    return text.replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&#039;/g, "'");
+  };
+
+  const getImage = (images) => {
+    if (!images) return "https://picsum.photos/150";
+    if (typeof images === 'string') return images;
+    if (Array.isArray(images)) {
+      return images[images.length - 1]?.link || images[0]?.link;
+    }
+    return "https://picsum.photos/150";
+  };
+
+  return (
+    <ScrollView style={styles.tabContainer}>
+      {songs.map((item, index) => (
+        <View key={item.id || index} style={{ marginBottom: 10 }}>
+          <SongCard
+            song={{
+              title: decodeHtmlEntities(item.name || item.title),
+              artist: decodeHtmlEntities(item.primaryArtists || item.artist || item.description),
+              image: getImage(item.image),
+            }}
+            onPress={() => navigation.navigate("Player", {
+              song: {
+                title: decodeHtmlEntities(item.name || item.title),
+                artist: decodeHtmlEntities(item.primaryArtists || item.artist || item.description),
+                image: getImage(item.image),
+              }
+            })}
+          />
+        </View>
+      ))}
+      <View style={{ height: 100 }} />
+    </ScrollView>
+  );
+};
+
+const ArtistsRoute = ({ navigation }) => {
+  const [artists, setArtists] = useState([]);
+
+  React.useEffect(() => {
+    const fetchArtists = async () => {
+      try {
+        const data = await getTrendingArtists();
+        const results = data?.results || data || [];
+        setArtists(Array.isArray(results) ? results : []);
+      } catch (error) {
+        console.error("Error fetching artists tab:", error);
+      }
+    };
+    fetchArtists();
+  }, []);
+
+  const decodeHtmlEntities = (text) => {
+    if (!text) return "";
+    return text.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#039;/g, "'");
+  };
+
+  const getImage = (images) => {
+    if (!images) return "https://picsum.photos/150";
+    if (typeof images === 'string') return images;
+    if (Array.isArray(images)) {
+      return images[images.length - 1]?.link || images[0]?.link;
+    }
+    return "https://picsum.photos/150";
+  };
+
+  return (
+    <ScrollView style={styles.tabContainer}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        {artists.map((item, index) => (
+          <View key={item.id || index} style={{ width: '48%', marginBottom: 15 }}>
+            <ArtistCard
+              artist={{
+                name: decodeHtmlEntities(item.name),
+                image: getImage(item.image),
+              }}
+              onPress={() => navigation.navigate("ArtistDetails", {
+                artist: {
+                  name: decodeHtmlEntities(item.name),
+                  image: getImage(item.image),
+                }
+              })}
+            />
+          </View>
+        ))}
+      </View>
+      <View style={{ height: 100 }} />
+    </ScrollView>
+  );
+};
 
 // Placeholder for other tabs
 const OtherRoute = () => (
@@ -101,7 +257,6 @@ export default function HomeScreen({ navigation }) {
     { key: "suggested", title: "Suggested" },
     { key: "songs", title: "Songs" },
     { key: "artists", title: "Artists" },
-    { key: "albums", title: "Albums" },
   ]);
 
   const renderScene = ({ route }) => {
@@ -109,11 +264,9 @@ export default function HomeScreen({ navigation }) {
       case "suggested":
         return <SuggestedRoute navigation={navigation} />;
       case "songs":
-        return <OtherRoute />;
+        return <SongsRoute navigation={navigation} />;
       case "artists":
-        return <OtherRoute />;
-      case "albums":
-        return <OtherRoute />;
+        return <ArtistsRoute navigation={navigation} />;
       default:
         return null;
     }
@@ -127,7 +280,7 @@ export default function HomeScreen({ navigation }) {
           <Ionicons name="musical-notes" size={28} color="#FF7000" />
           <Text style={styles.brandName}>My Player</Text>
         </View>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("Search")}>
           <Ionicons name="search" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -178,8 +331,6 @@ const styles = StyleSheet.create({
     marginTop: 25,
     marginBottom: 15,
   },
-  sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  seeAll: { color: "#FF7000", fontSize: 14, fontWeight: "600" },
   sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   seeAll: { color: "#FF7000", fontSize: 14, fontWeight: "600" },
 });

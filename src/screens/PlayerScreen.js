@@ -60,7 +60,7 @@ const PlayerScreen = ({ navigation, route }) => {
         </TouchableOpacity>
 
         <TouchableOpacity>
-          <MaterialCommunityIcons name="replay-10" size={30} color="#fff" />
+          <MaterialCommunityIcons name="rewind-10" size={30} color="#fff" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -71,7 +71,7 @@ const PlayerScreen = ({ navigation, route }) => {
         </TouchableOpacity>
 
         <TouchableOpacity>
-          <MaterialCommunityIcons name="forward-10" size={30} color="#fff" />
+          <MaterialCommunityIcons name="fast-forward-10" size={30} color="#fff" />
         </TouchableOpacity>
 
         <TouchableOpacity>

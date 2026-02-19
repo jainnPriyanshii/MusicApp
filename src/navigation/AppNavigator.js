@@ -8,6 +8,7 @@ import FavouriteScreen from "../screens/FavouriteScreen";
 import SettingScreen from "../screens/SettingScreen";
 import PlayerScreen from "../screens/PlayerScreen";
 import ArtistDetailsScreen from "../screens/ArtistDetailsScreen";
+import SearchScreen from "../screens/SearchScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -67,6 +68,11 @@ export default function AppNavigator() {
       <Stack.Screen
         name="ArtistDetails"
         component={ArtistDetailsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Search"
+        component={SearchScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>
