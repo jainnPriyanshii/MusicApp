@@ -24,6 +24,7 @@ const SectionHeader = ({ title }) => (
 );
 
 import { getTrendingSongs, getTrendingArtists } from "../services/api";
+import { usePlayerStore } from "../store/usePlayerStore";
 
 const SuggestedRoute = ({ navigation }) => {
   const [trendingSongs, setTrendingSongs] = useState([]);
@@ -72,58 +73,69 @@ const SuggestedRoute = ({ navigation }) => {
       .replace(/&#039;/g, "'");
   };
 
-  return (
-    <ScrollView style={styles.tabContainer}>
-      {/* Recently Played Section (Trending for now) */}
-      <SectionHeader title="Trending Songs" />
-      <FlatList
-        horizontal
-        data={trendingSongs}
-        renderItem={({ item }) => (
-          <SongCard
-            song={{
+ 
+
+  const getAudioUrl = (downloadUrl) => {
+    if (!downloadUrl) return null;
+    if (typeof downloadUrl === 'string') return downloadUrl;
+    if (Array.isArray(downloadUrl)) {
+      // Prefer 320kbps or the last available option
+      const target = downloadUrl.find(item => item.quality === "320kbps");
+      return target ? target.url : downloadUrl[downloadUrl.length - 1]?.url;
+    }
+    return null;
+  };
+  <ScrollView style={styles.tabContainer}>
+    {/* Recently Played Section (Trending for now) */}
+    <SectionHeader title="Trending Songs" />
+    <FlatList
+      horizontal
+      data={trendingSongs}
+      renderItem={({ item }) => (
+        <SongCard
+          song={{
+            title: decodeHtmlEntities(item.name),
+            artist: decodeHtmlEntities(item.primaryArtists || item.artist),
+            image: getImage(item.image),
+          }}
+          onPress={() => navigation.navigate("Player", {
+            song: {
               title: decodeHtmlEntities(item.name),
               artist: decodeHtmlEntities(item.primaryArtists || item.artist),
               image: getImage(item.image),
-            }}
-            onPress={() => navigation.navigate("Player", {
-              song: {
-                title: decodeHtmlEntities(item.name),
-                artist: decodeHtmlEntities(item.primaryArtists || item.artist),
-                image: getImage(item.image),
-              }
-            })}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        showsHorizontalScrollIndicator={false}
-      />
+            }
+          })}
+        />
+      )}
+      keyExtractor={(item) => item.id}
+      showsHorizontalScrollIndicator={false}
+    />
 
-      <SectionHeader title="Top Artists" />
-      <FlatList
-        horizontal
-        data={artists}
-        renderItem={({ item }) => (
-          <ArtistCard
-            artist={{
+    <SectionHeader title="Top Artists" />
+    <FlatList
+      horizontal
+      data={artists}
+      renderItem={({ item }) => (
+        <ArtistCard
+          artist={{
+            name: decodeHtmlEntities(item.name),
+            image: getImage(item.image),
+          }}
+          onPress={() => navigation.navigate("ArtistDetails", {
+            artist: {
               name: decodeHtmlEntities(item.name),
               image: getImage(item.image),
-            }}
-            onPress={() => navigation.navigate("ArtistDetails", {
-              artist: {
-                name: decodeHtmlEntities(item.name),
-                image: getImage(item.image),
-              }
-            })}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        showsHorizontalScrollIndicator={false}
-      />
+            }
+          })}
+        />
+      )}
+      keyExtractor={(item) => item.id}
+      showsHorizontalScrollIndicator={false}
+    />
 
-      <View style={{ height: 100 }} />
-    </ScrollView>
-  );
+    <View style={{ height: 100 }} />
+  </ScrollView>
+  
 };
 
 const SongsRoute = ({ navigation }) => {

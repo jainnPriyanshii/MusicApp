@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { searchAll } from '../services/api';
 import SongCard from '../components/SongCard';
 import ArtistCard from '../components/ArtistCard';
+import { usePlayerStore } from '../store/usePlayerStore';
 
 const SearchScreen = ({ navigation }) => {
     const [query, setQuery] = useState('');
@@ -55,6 +56,16 @@ const SearchScreen = ({ navigation }) => {
             return images[images.length - 1]?.link || images[0]?.link;
         }
         return "https://picsum.photos/150";
+    };
+
+    const getAudioUrl = (downloadUrl) => {
+        if (!downloadUrl) return null;
+        if (typeof downloadUrl === 'string') return downloadUrl;
+        if (Array.isArray(downloadUrl)) {
+            const target = downloadUrl.find(item => item.quality === "320kbps");
+            return target ? target.url : downloadUrl[downloadUrl.length - 1]?.url;
+        }
+        return null;
     };
 
     return (
