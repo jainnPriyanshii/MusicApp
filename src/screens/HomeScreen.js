@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { TabView, SceneMap, TabBar } from "react-native-tab-view";
 import { Ionicons } from "@expo/vector-icons";
+import SongCard from "../components/SongCard";
+import ArtistCard from "../components/ArtistCard";
 
 const SectionHeader = ({ title }) => (
   <View style={styles.sectionHeader}>
@@ -21,23 +23,22 @@ const SectionHeader = ({ title }) => (
   </View>
 );
 
-const SuggestedRoute = () => (
+const SuggestedRoute = ({ navigation }) => (
   <ScrollView style={styles.tabContainer}>
     {/* Recently Played Section */}
     <SectionHeader title="Recently Played" />
     <FlatList
       horizontal
       data={[1, 2, 3]}
-      renderItem={() => (
-        <View style={styles.albumCard}>
-          <Image
-            source={{ uri: "https://picsum.photos/150" }}
-            style={styles.albumArt}
-          />
-          <Text style={styles.albumText} numberOfLines={2}>
-            Shades of Love - Ania Szarm..
-          </Text>
-        </View>
+      renderItem={({ item }) => (
+        <SongCard
+          song={{
+            title: "Shades of Love",
+            artist: "Ania Szarmach",
+            image: "https://picsum.photos/150",
+          }}
+          onPress={() => navigation.navigate("Player")}
+        />
       )}
       keyExtractor={(item) => item.toString()}
       showsHorizontalScrollIndicator={false}
@@ -47,14 +48,19 @@ const SuggestedRoute = () => (
     <FlatList
       horizontal
       data={[1, 2, 3]}
-      renderItem={() => (
-        <View style={styles.artistCard}>
-          <Image
-            source={{ uri: "https://picsum.photos/151" }}
-            style={styles.artistArt}
-          />
-          <Text style={styles.artistText}>Ariana Grande</Text>
-        </View>
+      renderItem={({ item }) => (
+        <ArtistCard
+          artist={{
+            name: "Ariana Grande",
+            image: "https://picsum.photos/151",
+          }}
+          onPress={() => navigation.navigate("ArtistDetails", {
+            artist: {
+              name: "Ariana Grande",
+              image: "https://picsum.photos/151",
+            }
+          })}
+        />
       )}
       keyExtractor={(item) => item.toString()}
       showsHorizontalScrollIndicator={false}
@@ -64,13 +70,15 @@ const SuggestedRoute = () => (
     <FlatList
       horizontal
       data={[1, 2, 3]}
-      renderItem={() => (
-        <View style={styles.albumCard}>
-          <Image
-            source={{ uri: "https://picsum.photos/152" }}
-            style={styles.albumArt}
-          />
-        </View>
+      renderItem={({ item }) => (
+        <SongCard
+          song={{
+            title: "Song " + item,
+            artist: "Artist " + item,
+            image: "https://picsum.photos/152",
+          }}
+          onPress={() => navigation.navigate("Player")}
+        />
       )}
       keyExtractor={(item) => item.toString()}
       showsHorizontalScrollIndicator={false}
@@ -86,7 +94,7 @@ const OtherRoute = () => (
   </View>
 );
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const layout = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const [routes] = useState([
@@ -96,12 +104,20 @@ export default function HomeScreen() {
     { key: "albums", title: "Albums" },
   ]);
 
-  const renderScene = SceneMap({
-    suggested: SuggestedRoute,
-    songs: OtherRoute,
-    artists: OtherRoute,
-    albums: OtherRoute,
-  });
+  const renderScene = ({ route }) => {
+    switch (route.key) {
+      case "suggested":
+        return <SuggestedRoute navigation={navigation} />;
+      case "songs":
+        return <OtherRoute />;
+      case "artists":
+        return <OtherRoute />;
+      case "albums":
+        return <OtherRoute />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -164,10 +180,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   seeAll: { color: "#FF7000", fontSize: 14, fontWeight: "600" },
-  albumCard: { width: 140, marginRight: 15 },
-  albumArt: { width: 140, height: 140, borderRadius: 15 },
-  albumText: { color: "#fff", marginTop: 8, fontSize: 14, fontWeight: "500" },
-  artistCard: { width: 110, marginRight: 15, alignItems: "center" },
-  artistArt: { width: 100, height: 100, borderRadius: 50 },
-  artistText: { color: "#fff", marginTop: 8, fontSize: 14, fontWeight: "500" },
+  sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  seeAll: { color: "#FF7000", fontSize: 14, fontWeight: "600" },
 });
