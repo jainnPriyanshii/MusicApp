@@ -20,13 +20,21 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "package": "com.priyanshibori.MusicApp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-audio"
-    ]
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "81115186-1a69-4b1d-8bb9-815247c62b7e"
+      }
+    }
   }
 }
