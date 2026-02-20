@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
     image: {
         width: 90,
         height: 90,
-        borderRadius: 45, // Circular image
+        borderRadius: 45,
         marginBottom: 8,
         borderWidth: 2,
         borderColor: "#FF7000",

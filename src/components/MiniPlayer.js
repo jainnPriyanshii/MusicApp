@@ -3,34 +3,30 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { usePlayerStore } from '../store/usePlayerStore';
+
 const MiniPlayer = () => {
   const navigation = useNavigation();
+  const { currentTrack, isPlaying, pause, resume } = usePlayerStore();
 
-  // Mock data - eventually this will come from your Zustand store
-  const currentTrack = {
-    title: "Song Name",
-    artist: "Artist Name",
-    artwork: "https://via.placeholder.com/50"
-  };
-
-  if (!currentTrack) return null; // Hide if nothing is playing
+  if (!currentTrack) return null; 
 
   return (
-    <TouchableOpacity 
-      style={styles.container} 
+    <TouchableOpacity
+      style={styles.container}
       activeOpacity={0.9}
       onPress={() => navigation.navigate('Player')}
     >
-      <Image source={{ uri: currentTrack.artwork }} style={styles.albumArt} />
-      
+      <Image source={{ uri: currentTrack.image }} style={styles.albumArt} />
+
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>{currentTrack.title}</Text>
         <Text style={styles.artist}>{currentTrack.artist}</Text>
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity onPress={() => {/* Toggle Play/Pause */}}>
-          <Ionicons name="play" size={30} color="#dc773ce2" />
+        <TouchableOpacity onPress={() => isPlaying ? pause() : resume()}>
+          <Ionicons name={isPlaying ? "pause" : "play"} size={30} color="#dc773ce2" />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -51,7 +47,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#eee',
     elevation: 5,
-    shadowColor: '#000', 
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
   },
@@ -63,12 +59,12 @@ const styles = StyleSheet.create({
   info: {
     flex: 1,
     marginLeft: 10,
-    color:"#fff"
+    color: "#fff"
   },
   title: {
     fontSize: 14,
     fontWeight: 'bold',
-    color:"#fff"
+    color: "#fff"
   },
   artist: {
     fontSize: 12,

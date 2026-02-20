@@ -8,17 +8,19 @@ export const searchAll = async (query) => {
 
 
 
-// Fallback to search if specific endpoints fail for listing
+
 export const getTrendingSongs = async (lang = "hindi") => {
-  // Try searching for "Latest" or "Trending"
+
   const res = await fetch(`${BASE}/search/songs?query=trending ${lang}&limit=15`);
   const json = await res.json();
+  console.log("getTrendingSongs response:", JSON.stringify(json, null, 2));
   return json.data;
 };
 
 export const getTrendingArtists = async () => {
   const res = await fetch(`${BASE}/search/artists?query=popular&limit=10`);
   const json = await res.json();
+  console.log("getTrendingArtists response:", JSON.stringify(json, null, 2));
   return json.data;
 };
 

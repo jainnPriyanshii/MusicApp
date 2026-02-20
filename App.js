@@ -8,13 +8,21 @@ import MiniPlayer from './src/components/MiniPlayer.js';
 
 
 export default function App() {
+  const [currentRoute, setCurrentRoute] = React.useState('MainTabs');
+
   return (
     <View style={{ flex: 1 }}>
-    <NavigationContainer>
-     <AppNavigator/>
-    
-    <MiniPlayer/>
-    </NavigationContainer>
+      <NavigationContainer
+        onStateChange={(state) => {
+          if (state) {
+            const route = state.routes[state.index];
+            setCurrentRoute(route.name);
+          }
+        }}
+      >
+        <AppNavigator />
+        {currentRoute !== 'Player' && <MiniPlayer />}
+      </NavigationContainer>
     </View>
   );
 }

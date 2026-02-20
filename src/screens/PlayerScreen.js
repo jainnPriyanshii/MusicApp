@@ -1,21 +1,47 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 
 const { width } = Dimensions.get('window');
 
-const PlayerScreen = ({ navigation, route }) => {
-  const { song } = route.params || {
-    song: {
-      title: "Starboy",
-      artist: "The Weeknd, Daft Punk",
-      image: "https://upload.wikimedia.org/wikipedia/en/3/39/The_Weeknd_-_Starboy.png"
+import { usePlayerStore } from '../store/usePlayerStore';
+import { useLibraryStore } from '../store/useLibraryStore';
+
+const PlayerScreen = ({ navigation }) => {
+  const { currentTrack, isPlaying, pause, resume, duration, position, seek } = usePlayerStore();
+  const { toggleFavorite, favorites } = useLibraryStore();
+  const [isSliding, setIsSliding] = useState(false);
+  const [sliderValue, setSliderValue] = useState(0);
+
+  
+  useEffect(() => {
+    if (!isSliding) {
+      setSliderValue(position);
     }
+  }, [position, isSliding]);
+
+  const song = currentTrack || {
+    title: "Not Playing",
+    artist: "Select a song",
+    image: "https://via.placeholder.com/300",
+    id: "dummy"
   };
 
-  const [isPlaying, setIsPlaying] = useState(false);
+  const isFav = favorites.find(t => t.id === song.id);
+
+  const formatTime = (millis) => {
+    if (!millis) return "00:00";
+    const minutes = Math.floor(millis / 60000);
+    const seconds = ((millis % 60000) / 1000).toFixed(0);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  const handleSlidingComplete = async (value) => {
+    await seek(value);
+    setIsSliding(false);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,15 +67,25 @@ const PlayerScreen = ({ navigation, route }) => {
         <Text style={styles.artistName}>{song.artist}</Text>
       </View>
 
-      {/* Progress Bar */}
+      {/* Progress Bar / Slider */}
       <View style={styles.progressContainer}>
-        <View style={styles.progressBarBackground}>
-          <View style={[styles.progressBarFill, { width: '70%' }]} />
-          <View style={styles.progressKnob} />
-        </View>
+        <Slider
+          style={{ width: '100%', height: 40 }}
+          minimumValue={0}
+          maximumValue={duration}
+          value={sliderValue}
+          onValueChange={(value) => {
+            setIsSliding(true);
+            setSliderValue(value);
+          }}
+          onSlidingComplete={handleSlidingComplete}
+          minimumTrackTintColor="#FF7000"
+          maximumTrackTintColor="#333"
+          thumbTintColor="#FF7000"
+        />
         <View style={styles.timeContainer}>
-          <Text style={styles.timeText}>03:35</Text>
-          <Text style={styles.timeText}>03:50</Text>
+          <Text style={styles.timeText}>{formatTime(sliderValue)}</Text>
+          <Text style={styles.timeText}>{formatTime(duration)}</Text>
         </View>
       </View>
 
@@ -65,7 +101,7 @@ const PlayerScreen = ({ navigation, route }) => {
 
         <TouchableOpacity
           style={styles.playButton}
-          onPress={() => setIsPlaying(!isPlaying)}
+          onPress={() => isPlaying ? pause() : resume()}
         >
           <Ionicons name={isPlaying ? "pause" : "play"} size={40} color="#121212" />
         </TouchableOpacity>
@@ -81,11 +117,11 @@ const PlayerScreen = ({ navigation, route }) => {
 
       {/* Bottom Actions */}
       <View style={styles.bottomActions}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="speedometer-outline" size={24} color="#fff" />
+        <TouchableOpacity style={styles.actionButton} onPress={() => toggleFavorite(song)}>
+          <Ionicons name={isFav ? "heart" : "heart-outline"} size={28} color={isFav ? "#FF7000" : "#fff"} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="stopwatch-outline" size={24} color="#fff" />
+        <TouchableOpacity style={styles.actionButton} onPress={() => alert("Add to Playlist feature coming soon!")}>
+          <MaterialCommunityIcons name="playlist-plus" size={28} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton}>
           <MaterialCommunityIcons name="cast" size={24} color="#fff" />
@@ -161,29 +197,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     marginTop: 30,
   },
-  progressBarBackground: {
-    height: 4,
-    backgroundColor: '#333',
-    borderRadius: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  progressBarFill: {
-    height: 4,
-    backgroundColor: '#FF7000',
-    borderRadius: 2,
-  },
-  progressKnob: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#FF7000',
-    marginLeft: -6, // Center on the end of the fill
-  },
   timeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: -5,
   },
   timeText: {
     color: '#fff',

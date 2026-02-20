@@ -26,6 +26,45 @@ const SectionHeader = ({ title }) => (
 import { getTrendingSongs, getTrendingArtists } from "../services/api";
 import { usePlayerStore } from "../store/usePlayerStore";
 
+const decodeHtmlEntities = (text) => {
+  if (!text) return "";
+  return text.replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#039;/g, "'");
+};
+
+const getImage = (images) => {
+  if (!images) return "https://picsum.photos/150";
+  if (typeof images === 'string') return images;
+  if (Array.isArray(images)) {
+    
+    const highQuality = images.find(img => img.quality === "500x500") || images[images.length - 1];
+    return highQuality?.url || highQuality?.link || images[0]?.url || images[0]?.link;
+  }
+  return "https://picsum.photos/150";
+};
+
+const getArtistName = (item) => {
+  if (item.primaryArtists) return item.primaryArtists;
+  if (item.artist) return item.artist;
+  if (item.artists && item.artists.primary && item.artists.primary.length > 0) {
+    return item.artists.primary[0].name;
+  }
+  return "Unknown Artist";
+};
+
+const getAudioUrl = (downloadUrl) => {
+  if (!downloadUrl) return null;
+  if (typeof downloadUrl === 'string') return downloadUrl;
+  if (Array.isArray(downloadUrl)) {
+    const target = downloadUrl.find(item => item.quality === "320kbps");
+    return target ? target.url : downloadUrl[downloadUrl.length - 1]?.url;
+  }
+  return null;
+};
+
 const SuggestedRoute = ({ navigation }) => {
   const [trendingSongs, setTrendingSongs] = useState([]);
   const [artists, setArtists] = useState([]);
@@ -38,7 +77,6 @@ const SuggestedRoute = ({ navigation }) => {
           getTrendingSongs("hindi"),
           getTrendingArtists()
         ]);
-        // Handle potentially different data structures (array vs object with results)
         const songs = songsData?.results || songsData || [];
         const artists = artistsData?.results || artistsData || [];
 
@@ -54,88 +92,70 @@ const SuggestedRoute = ({ navigation }) => {
     fetchData();
   }, []);
 
-  const getImage = (images) => {
-    if (!images) return "https://picsum.photos/150";
-    if (typeof images === 'string') return images;
-    if (Array.isArray(images)) {
-      // Return the highest quality or the last one
-      return images[images.length - 1]?.link || images[0]?.link;
-    }
-    return "https://picsum.photos/150";
-  };
+  return (
+    <ScrollView style={styles.tabContainer}>
+      <SectionHeader title="Trending Songs" />
+      <FlatList
+        horizontal
+        data={trendingSongs}
+        renderItem={({ item }) => (
+          <View style={{ width: 160, marginRight: 10 }}>
+            <SongCard
+              song={{
+                title: decodeHtmlEntities(item.name),
+                artist: decodeHtmlEntities(getArtistName(item)),
+                image: getImage(item.image),
+              }}
+              onPress={() => navigation.navigate("Player", {
+                song: {
+                  title: decodeHtmlEntities(item.name),
+                  artist: decodeHtmlEntities(getArtistName(item)),
+                  image: getImage(item.image),
+                  uri: getAudioUrl(item.downloadUrl)
+                }
+              })}
+              onPlay={() => {
+                const track = {
+                  id: item.id,
+                  title: decodeHtmlEntities(item.name),
+                  artist: decodeHtmlEntities(getArtistName(item)),
+                  image: getImage(item.image),
+                  uri: getAudioUrl(item.downloadUrl)
+                };
+                usePlayerStore.getState().playTrack(track);
+              }}
+            />
+          </View>
+        )}
+        keyExtractor={(item) => item.id}
+        showsHorizontalScrollIndicator={false}
+      />
 
-  const decodeHtmlEntities = (text) => {
-    if (!text) return "";
-    return text.replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&#039;/g, "'");
-  };
-
- 
-
-  const getAudioUrl = (downloadUrl) => {
-    if (!downloadUrl) return null;
-    if (typeof downloadUrl === 'string') return downloadUrl;
-    if (Array.isArray(downloadUrl)) {
-      // Prefer 320kbps or the last available option
-      const target = downloadUrl.find(item => item.quality === "320kbps");
-      return target ? target.url : downloadUrl[downloadUrl.length - 1]?.url;
-    }
-    return null;
-  };
-  <ScrollView style={styles.tabContainer}>
-    {/* Recently Played Section (Trending for now) */}
-    <SectionHeader title="Trending Songs" />
-    <FlatList
-      horizontal
-      data={trendingSongs}
-      renderItem={({ item }) => (
-        <SongCard
-          song={{
-            title: decodeHtmlEntities(item.name),
-            artist: decodeHtmlEntities(item.primaryArtists || item.artist),
-            image: getImage(item.image),
-          }}
-          onPress={() => navigation.navigate("Player", {
-            song: {
-              title: decodeHtmlEntities(item.name),
-              artist: decodeHtmlEntities(item.primaryArtists || item.artist),
-              image: getImage(item.image),
-            }
-          })}
-        />
-      )}
-      keyExtractor={(item) => item.id}
-      showsHorizontalScrollIndicator={false}
-    />
-
-    <SectionHeader title="Top Artists" />
-    <FlatList
-      horizontal
-      data={artists}
-      renderItem={({ item }) => (
-        <ArtistCard
-          artist={{
-            name: decodeHtmlEntities(item.name),
-            image: getImage(item.image),
-          }}
-          onPress={() => navigation.navigate("ArtistDetails", {
-            artist: {
+      <SectionHeader title="Top Artists" />
+      <FlatList
+        horizontal
+        data={artists}
+        renderItem={({ item }) => (
+          <ArtistCard
+            artist={{
               name: decodeHtmlEntities(item.name),
               image: getImage(item.image),
-            }
-          })}
-        />
-      )}
-      keyExtractor={(item) => item.id}
-      showsHorizontalScrollIndicator={false}
-    />
+            }}
+            onPress={() => navigation.navigate("ArtistDetails", {
+              artist: {
+                name: decodeHtmlEntities(item.name),
+                image: getImage(item.image),
+              }
+            })}
+          />
+        )}
+        keyExtractor={(item) => item.id}
+        showsHorizontalScrollIndicator={false}
+      />
 
-    <View style={{ height: 100 }} />
-  </ScrollView>
-  
+      <View style={{ height: 100 }} />
+    </ScrollView>
+  );
 };
 
 const SongsRoute = ({ navigation }) => {
@@ -145,7 +165,7 @@ const SongsRoute = ({ navigation }) => {
   React.useEffect(() => {
     const fetchSongs = async () => {
       try {
-        const data = await getTrendingSongs("english"); // Fetching English songs for variety or keep same
+        const data = await getTrendingSongs("english");
         const results = data?.results || data || [];
         setSongs(Array.isArray(results) ? results : []);
       } catch (error) {
@@ -157,24 +177,6 @@ const SongsRoute = ({ navigation }) => {
     fetchSongs();
   }, []);
 
-  const decodeHtmlEntities = (text) => {
-    if (!text) return "";
-    return text.replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&#039;/g, "'");
-  };
-
-  const getImage = (images) => {
-    if (!images) return "https://picsum.photos/150";
-    if (typeof images === 'string') return images;
-    if (Array.isArray(images)) {
-      return images[images.length - 1]?.link || images[0]?.link;
-    }
-    return "https://picsum.photos/150";
-  };
-
   return (
     <ScrollView style={styles.tabContainer}>
       {songs.map((item, index) => (
@@ -182,16 +184,27 @@ const SongsRoute = ({ navigation }) => {
           <SongCard
             song={{
               title: decodeHtmlEntities(item.name || item.title),
-              artist: decodeHtmlEntities(item.primaryArtists || item.artist || item.description),
+              artist: decodeHtmlEntities(getArtistName(item)),
               image: getImage(item.image),
             }}
             onPress={() => navigation.navigate("Player", {
               song: {
                 title: decodeHtmlEntities(item.name || item.title),
-                artist: decodeHtmlEntities(item.primaryArtists || item.artist || item.description),
+                artist: decodeHtmlEntities(getArtistName(item)),
                 image: getImage(item.image),
+                uri: getAudioUrl(item.downloadUrl)
               }
             })}
+            onPlay={() => {
+              const track = {
+                id: item.id,
+                title: decodeHtmlEntities(item.name || item.title),
+                artist: decodeHtmlEntities(getArtistName(item)),
+                image: getImage(item.image),
+                uri: getAudioUrl(item.downloadUrl)
+              };
+              usePlayerStore.getState().playTrack(track);
+            }}
           />
         </View>
       ))}
@@ -215,20 +228,6 @@ const ArtistsRoute = ({ navigation }) => {
     };
     fetchArtists();
   }, []);
-
-  const decodeHtmlEntities = (text) => {
-    if (!text) return "";
-    return text.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#039;/g, "'");
-  };
-
-  const getImage = (images) => {
-    if (!images) return "https://picsum.photos/150";
-    if (typeof images === 'string') return images;
-    if (Array.isArray(images)) {
-      return images[images.length - 1]?.link || images[0]?.link;
-    }
-    return "https://picsum.photos/150";
-  };
 
   return (
     <ScrollView style={styles.tabContainer}>

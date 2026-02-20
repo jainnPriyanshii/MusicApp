@@ -2,10 +2,10 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import SongCard from "../components/SongCard"; // Reuse SongCard for artist's songs
+import SongCard from "../components/SongCard";
 
 const ArtistDetailsScreen = ({ route, navigation }) => {
-    // Use mock data if not passed
+  
     const { artist } = route.params || {
         artist: {
             name: "Unknown Artist",

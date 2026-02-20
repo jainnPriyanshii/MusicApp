@@ -3,7 +3,7 @@ import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-const SongCard = ({ song, onPress }) => {
+const SongCard = ({ song, onPress, onPlay }) => {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       <Image source={{ uri: song.image }} style={styles.image} />
@@ -15,8 +15,8 @@ const SongCard = ({ song, onPress }) => {
           {song.artist}
         </Text>
       </View>
-      <TouchableOpacity onPress={() => console.log("Play")}>
-         <Ionicons name="play-circle" size={28} color="#FF7000" />
+      <TouchableOpacity onPress={onPlay}>
+        <Ionicons name="play-circle" size={28} color="#FF7000" />
       </TouchableOpacity>
     </TouchableOpacity>
   );

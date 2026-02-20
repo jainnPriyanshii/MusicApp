@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { searchAll } from '../services/api';
+import { searchAll, getSongDetails } from '../services/api';
 import SongCard from '../components/SongCard';
 import ArtistCard from '../components/ArtistCard';
 import { usePlayerStore } from '../store/usePlayerStore';
@@ -13,7 +13,7 @@ const SearchScreen = ({ navigation }) => {
     const [results, setResults] = useState({ songs: [], artists: [] });
     const [loading, setLoading] = useState(false);
 
-    // Debounce search
+    
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
             if (query.length > 2) {
@@ -50,10 +50,12 @@ const SearchScreen = ({ navigation }) => {
     };
 
     const getImage = (images) => {
+        
         if (!images) return "https://picsum.photos/150";
         if (typeof images === 'string') return images;
         if (Array.isArray(images)) {
-            return images[images.length - 1]?.link || images[0]?.link;
+            const highQuality = images.find(img => img.quality === "500x500") || images[images.length - 1];
+            return highQuality?.url || highQuality?.link || images[0]?.url || images[0]?.link;
         }
         return "https://picsum.photos/150";
     };
@@ -62,8 +64,13 @@ const SearchScreen = ({ navigation }) => {
         if (!downloadUrl) return null;
         if (typeof downloadUrl === 'string') return downloadUrl;
         if (Array.isArray(downloadUrl)) {
-            const target = downloadUrl.find(item => item.quality === "320kbps");
-            return target ? target.url : downloadUrl[downloadUrl.length - 1]?.url;
+            // Priority: 320kbps -> 160kbps -> 96kbps -> last available
+            const qualities = ["320kbps", "160kbps", "96kbps"];
+            for (let q of qualities) {
+                const match = downloadUrl.find(item => item.quality === q);
+                if (match) return match.url || match.link;
+            }
+            return downloadUrl[downloadUrl.length - 1]?.url || downloadUrl[downloadUrl.length - 1]?.link;
         }
         return null;
     };
@@ -92,7 +99,7 @@ const SearchScreen = ({ navigation }) => {
             {loading && <ActivityIndicator size="large" color="#FF7000" style={{ marginTop: 20 }} />}
 
             <FlatList
-                data={[]} // Main list is empty, using ListHeaderComponent for sections to scroll together
+                data={[]} 
                 keyExtractor={() => "dummy"}
                 ListHeaderComponent={
                     <>
@@ -138,8 +145,41 @@ const SearchScreen = ({ navigation }) => {
                                                 title: decodeHtmlEntities(item.title),
                                                 artist: decodeHtmlEntities(item.primaryArtists || item.description),
                                                 image: getImage(item.image),
+                                                uri: getAudioUrl(item.downloadUrl || item.url)
                                             }
                                         })}
+                                        onPlay={async () => {
+                                            try {
+                                                console.log("SearchScreen: Fetching details for", item.id);
+                                            
+                                                const detailsData = await getSongDetails(item.id);
+                                                const details = Array.isArray(detailsData) ? detailsData[0] : detailsData;
+                                               
+
+                                                const songObj = details[item.id] || details; 
+
+                                                const audioUri = getAudioUrl(songObj.downloadUrl || songObj.media_preview_url); 
+
+                                                if (!audioUri) {
+                                                    console.error("SearchScreen: Still no audio URI", songObj);
+                                                    alert("Error: Cannot play this song (no audio link).");
+                                                    return;
+                                                }
+
+                                                const track = {
+                                                    id: item.id,
+                                                    title: decodeHtmlEntities(item.title),
+                                                    artist: decodeHtmlEntities(item.primaryArtists || item.description),
+                                                    image: getImage(item.image),
+                                                    uri: audioUri
+                                                };
+
+                                                usePlayerStore.getState().playTrack(track);
+                                            } catch (error) {
+                                                console.error("SearchScreen: Error fetching song details", error);
+                                                alert("Failed to load song details.");
+                                            }
+                                        }}
                                     />
                                 ))}
                             </View>
